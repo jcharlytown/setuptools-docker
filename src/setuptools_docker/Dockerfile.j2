@@ -1,0 +1,86 @@
+FROM python:3.8-bullseye AS builder
+
+{% for package in builder_extra_os_packages %}
+{% if loop.first %}
+RUN apt update && apt install -y \
+{% endif %}
+    {{ package }} {{ "__BS__" if not loop.last }}
+{% endfor %}
+
+RUN python -m venv /opt/venv
+
+ENV PATH=/opt/venv/bin:$PATH
+
+WORKDIR /opt
+
+{% if requirement_file %}
+COPY {{ requirement_file}} .
+{% endif %}
+
+{% for requirement in pip_requirements %}
+{% if loop.first %}
+RUN {{ "--mount=type=secret,id=INDEX_PASSWORD" if index_url_needs_secret }} {{ "--mount=type=cache,target=/root/.cache/pip" if pip_cache }} pip install {{ "--no-cache-dir" if not pip_cache }} \
+    {{ "-i " + index_url + " __BS__" if index_url }}
+{% endif %}
+    {{ requirement }} {{ "__BS__" if not loop.last }}
+{% endfor %}
+
+COPY *.whl .
+
+RUN {{ "--mount=type=secret,id=INDEX_PASSWORD" if index_url_needs_secret }} {{ "--mount=type=cache,target=/root/.cache/pip" if pip_cache }} pip install \
+    {{ "--no-cache-dir" if not pip_cache }} {{ "-i " + index_url if index_url }} *.whl
+
+FROM {{ base_image }}
+
+{% for env_var in env_vars %}
+{% if loop.first %}
+ENV {{ env_var[0] }}={{ env_var[1] }} {{ "__BS__" if not loop.last }}
+{% else %}
+    {{ env_var[0] }}={{ env_var[1] }} {{ "__BS__" if not loop.last }}
+{% endif %}
+{% endfor %}
+
+{% for package in extra_os_packages %}
+{% if loop.first %}
+RUN apt update && apt install -y __BS__
+{% endif %}
+    {{ package }} {{ "__BS__" if not loop.last }}
+{% endfor %}
+
+RUN mkdir -p /app/init.d
+
+COPY docker-entrypoint.sh /app/
+
+COPY --from=builder /opt/venv /app/venv
+
+{% for script in init_scripts_base %}
+COPY {{ script }} /app/init.d/
+{% endfor %}
+
+{% for extra_file in extra_files %}
+COPY {{ extra_file }} {{ location }}
+{% endfor %}
+
+ENV PATH=/app/venv/bin:$PATH
+
+ENV PYTHONDONTWRITEBYTECODE=1
+
+ENV PYTHONUNBUFFERED=1
+
+{% if user_id %}
+RUN if ! $(id {{ user_id }} 1>/dev/null 2>/dev/null) ; then \
+        groupadd -r app && useradd --uid {{ user_id }} -r -g app app ; \
+    fi
+
+USER {{ user_id }}
+{% endif %}
+
+{% if entrypoint_exec_form %}
+ENTRYPOINT {{ entrypoint_exec_form }}
+{% else %}
+ENTRYPOINT ["/app/docker-entrypoint.sh", "python"]
+{% endif %}
+
+{% if command_exec_form %}
+CMD {{ command_exec_form }}
+{% endif %}
