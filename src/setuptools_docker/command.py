@@ -71,8 +71,6 @@ class bdist_docker(Command):
         self.environment_vars = None
 
     def finalize_options(self) -> None:
-        #print(inspect.getmembers(self.distribution))
-        print(self.distribution.entry_points)
         if self.image_name is None:
             dist_name = self.distribution.metadata.name
             self.image_name = dist_name
