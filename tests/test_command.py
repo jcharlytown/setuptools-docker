@@ -1,6 +1,6 @@
 import pytest
 
-from setuptools_docker.command import _parse_envvars
+from setuptools_docker.command import _parse_envvars, _parse_list
 
 
 @pytest.mark.parametrize(
@@ -14,10 +14,14 @@ from setuptools_docker.command import _parse_envvars
             ["blub=bla", "hello=world"],
             [("blub", "bla"), ("hello", "world")],
         ),
+        (["blub="], [("blub", "")]),
+        (["blub=bla=fizz"], [("blub", "bla=fizz")]),
+        (["blub=="], [("blub", "=")]),
         (
             [],
             [],
         ),
+        (['BLA="!@#$%^&*()='], [("BLA", '"!@#$%^&*()=')]),
     ],
 )
 def test_envvars_parsing(list, expected_tuples):
@@ -28,14 +32,20 @@ def test_envvars_parsing(list, expected_tuples):
 @pytest.mark.parametrize(
     "list",
     [
-        (["blub="]),
-        (["blub=bla"], ["blub="]),
         (["=bla"]),
         (["blablub"]),
-        (["blub=bla=fizz"]),
         (["%=illegal"]),
     ],
 )
 def test_envars_parsing_illegal(list):
     with pytest.raises(Exception):
         _parse_envvars(list)
+
+
+def test_envars_parsing_e2e():
+    s = """
+    
+    BLA="!@#$%^&*()=
+
+    """
+    assert _parse_envvars(_parse_list(s)) == [("BLA", '"!@#$%^&*()=')]

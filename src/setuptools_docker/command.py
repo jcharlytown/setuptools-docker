@@ -136,7 +136,7 @@ def _parse_list(l: Optional[str]) -> List[str]:
 
 def _parse_envvars(l: List[str]) -> List[Tuple[str, str]]:
     def match(e: str):
-        m = re.search(r"^([a-zA-Z_]\w*)=(\w+)$", e)
+        m = re.fullmatch(r"([a-zA-Z_]\w*)=(.*)", e)
         if m:
             return m
         else:
