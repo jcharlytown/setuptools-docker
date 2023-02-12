@@ -30,6 +30,21 @@ def prepare_context(
     pip_cache: bool = True,
     env_vars: List[Tuple[str, str]] = [],
 ) -> Dict[str, str]:
+    pathlib.Path(context_path).mkdir(parents=True, exist_ok=True)
+
+    entrypoint_script = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), "docker-entrypoint.sh"
+    )
+
+    # copy wheel and other files
+    for to_copy in [str(entrypoint_script), wheel_file]:
+        shutil.copy(to_copy, context_path)
+
+    if requirements_file:
+        shutil.copy(requirements_file, context_path)
+
+    for init_script in init_scripts:
+        shutil.copy(init_script, context_path)
 
     entrypoint_exec_form = (
         str(["/app/docker-entrypoint.sh"] + entrypoint).replace("'", '"')
@@ -46,8 +61,12 @@ def prepare_context(
         trim_blocks=True,
     ).get_template("Dockerfile.j2")
 
+    requirements_file_basename = (
+        os.path.basename(requirements_file) if requirements_file else None
+    )
+
     pip_requirements = (
-        [f"-r {requirements_file}"] if requirements_file else []
+        [f"-r {requirements_file_basename}"] if requirements_file_basename else []
     ) + extra_requirements
 
     dockerfile = dockerfile_template.render(
@@ -55,7 +74,7 @@ def prepare_context(
         base_image=base_image,
         extra_os_packages=extra_os_packages,
         builder_extra_os_packages=builder_extra_os_packages,
-        requirements_file=requirements_file,
+        requirements_file=requirements_file_basename,
         pip_requirements=pip_requirements,
         index_url=index_url_with_auth,
         index_url_needs_secret=index_password is not None,
@@ -67,31 +86,19 @@ def prepare_context(
         env_vars=env_vars,
     ).replace("__BS__", "\\")
 
-    pathlib.Path(context_path).mkdir(parents=True, exist_ok=True)
-
     # write Dockerfile
     with open(os.path.join(context_path, "Dockerfile"), "w") as dockerfile_f:
         dockerfile_f.write(dockerfile)
-
-    entrypoint_script = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), "docker-entrypoint.sh"
-    )
-
-    # copy wheel and other files
-    for to_copy in [str(entrypoint_script), wheel_file]:
-        shutil.copy(to_copy, context_path)
-
-    if requirements_file:
-        shutil.copy(requirements_file, context_path)
-
-    for init_script in init_scripts:
-        shutil.copy(init_script, context_path)
 
     return {INDEX_SECRET_NAME: index_password} if index_password else {}
 
 
 def build_image(
-    context_path: str, image_name: str, image_tag: str, secrets: Dict[str, str] = {}
+    context_path: str,
+    image_name: str,
+    image_tag: str,
+    secrets: Dict[str, str] = {},
+    target: Optional[str] = None,
 ):
     subprocess_env = secrets.copy()
     subprocess_env["PATH"] = os.environ["PATH"]
@@ -103,6 +110,7 @@ def build_image(
             "docker",
             "build",
         ]
+        + (["--target", target] if target else [])
         + _secrets_args(secrets)
         + [
             "-f",

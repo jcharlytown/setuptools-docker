@@ -7,14 +7,14 @@ RUN apt update && apt install -y \
     {{ package }} {{ "__BS__" if not loop.last }}
 {% endfor %}
 
-RUN python -m venv /opt/venv
+RUN python -m venv /app/venv
 
-ENV PATH=/opt/venv/bin:$PATH
+ENV PATH=/app/venv/bin:$PATH
 
-WORKDIR /opt
+WORKDIR /app
 
-{% if requirement_file %}
-COPY {{ requirement_file}} .
+{% if requirements_file %}
+COPY {{ requirements_file }} .
 {% endif %}
 
 {% for requirement in pip_requirements %}
@@ -51,7 +51,7 @@ RUN mkdir -p /app/init.d
 
 COPY docker-entrypoint.sh /app/
 
-COPY --from=builder /opt/venv /app/venv
+COPY --from=builder /app/venv /app/venv
 
 {% for script in init_scripts_base %}
 COPY {{ script }} /app/init.d/
