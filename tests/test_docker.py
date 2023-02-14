@@ -226,6 +226,7 @@ def test_pip_packages(tmp_dir, test_context_dir, test_wheel_path, docker_client)
         docker_client,
         context_path=test_context_dir,
         wheel_file=test_wheel_path,
+        extra_requires=["gevent"],
         requirements_file=f.name,
     )
     docker_hl_client = docker.from_env()
@@ -238,3 +239,4 @@ def test_pip_packages(tmp_dir, test_context_dir, test_wheel_path, docker_client)
 
     assert "gunicorn" in output
     assert "Werkzeug" in output
+    assert "gevent" in output

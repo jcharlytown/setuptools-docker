@@ -29,8 +29,8 @@ itself, e.g., `setup.cfg`.
 It adds a new section `[bdist_docker]`, e.g.:
 ```ini
 [bdist_docker]
-extra_requirements =
-    gunicorn[gevent]
+extra_requires =
+    gunicorn
 user_id = 1100
 environment_vars =
     FIZZ=BUZZ
@@ -42,7 +42,7 @@ environment_vars =
 | image_name                | str  | image name (optionally incl. registry)                            | metadata name            |
 | image_tag                 | str  | image tag                                                         | metadata version         |
 | requirements_file         | str  | pip requirements file to install into image                       |                          |
-| extra_requirements        | list | extra pip requirements to install into image                      |                          |
+| extra_requires            | list | extras to install alongside wheel                                 |                          |
 | index_url                 | str  | pip index url to install dependencies from                        | (pip default index)      |
 | index_username            | str  | username for authentication to PIP index                          |                          |
 | index_password            | str  | password for authentication to PIP index                          |                          |

@@ -38,7 +38,7 @@ class bdist_docker(Command):
             "r",
             "Requirements file for installing dependencies via pip",
         ),
-        ("extra-requirements=", None, "Extra packages to install via pip"),
+        ("extra-requires=", None, "Extras to install alongside wheel"),
         ("index-username=", None, "Username for auth with python package index"),
         ("index-password=", None, "Password for auth with python package index"),
         ("user-id=", "u", "Id of os user to run within container"),
@@ -58,8 +58,8 @@ class bdist_docker(Command):
         self.builder_extra_os_packages = None
         self.base_image = "python:3.8-slim-bullseye"
         self.extra_os_packages = None
+        self.extra_requires = None
         self.requirements_file = None
-        self.extra_requirements = None
         self.index_url = None
         self.index_username = None
         self.index_password = None
@@ -102,7 +102,7 @@ class bdist_docker(Command):
             extra_os_packages=_parse_list(self.extra_os_packages),
             builder_extra_os_packages=_parse_list(self.builder_extra_os_packages),
             requirements_file=self.requirements_file,
-            extra_requirements=_parse_list(self.extra_requirements),
+            extra_requires=_parse_list(self.extra_requires),
             index_url=self.index_url,
             index_username=self.index_username,
             index_password=self.index_password,

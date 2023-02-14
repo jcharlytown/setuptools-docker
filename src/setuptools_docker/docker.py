@@ -19,7 +19,7 @@ def prepare_context(
     extra_os_packages: List[str] = [],
     builder_extra_os_packages: List[str] = [],
     requirements_file: Optional[str] = None,
-    extra_requirements: List[str] = [],
+    extra_requires: List[str] = [],
     index_url: Optional[str] = None,
     index_username: Optional[str] = None,
     index_password: Optional[str] = None,
@@ -65,17 +65,16 @@ def prepare_context(
         os.path.basename(requirements_file) if requirements_file else None
     )
 
-    pip_requirements = (
-        [f"-r {requirements_file_basename}"] if requirements_file_basename else []
-    ) + extra_requirements
+    if extra_requires:
+        extra_requires = "[" + ",".join(extra_requires) + "]"
 
     dockerfile = dockerfile_template.render(
-        wheel_file=wheel_file,
+        wheel_file=os.path.basename(wheel_file),
+        extra_requires=extra_requires,
         base_image=base_image,
         extra_os_packages=extra_os_packages,
         builder_extra_os_packages=builder_extra_os_packages,
         requirements_file=requirements_file_basename,
-        pip_requirements=pip_requirements,
         index_url=index_url_with_auth,
         index_url_needs_secret=index_password is not None,
         init_scripts_base=init_scripts_base,

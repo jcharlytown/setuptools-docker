@@ -15,20 +15,15 @@ WORKDIR /app
 
 {% if requirements_file %}
 COPY {{ requirements_file }} .
+
+RUN {{ "--mount=type=secret,id=INDEX_PASSWORD" if index_url_needs_secret }} {{ "--mount=type=cache,target=/root/.cache/pip" if pip_cache }} pip install {{ "--no-cache-dir" if not pip_cache }} {{ "-i " + index_url if index_url }} \
+    -r {{ requirements_file }}
 {% endif %}
 
-{% for requirement in pip_requirements %}
-{% if loop.first %}
-RUN {{ "--mount=type=secret,id=INDEX_PASSWORD" if index_url_needs_secret }} {{ "--mount=type=cache,target=/root/.cache/pip" if pip_cache }} pip install {{ "--no-cache-dir" if not pip_cache }} \
-    {{ "-i " + index_url + " __BS__" if index_url }}
-{% endif %}
-    {{ requirement }} {{ "__BS__" if not loop.last }}
-{% endfor %}
-
-COPY *.whl .
+COPY {{ wheel_file }} .
 
 RUN {{ "--mount=type=secret,id=INDEX_PASSWORD" if index_url_needs_secret }} {{ "--mount=type=cache,target=/root/.cache/pip" if pip_cache }} pip install \
-    {{ "--no-cache-dir" if not pip_cache }} {{ "-i " + index_url if index_url }} *.whl
+    {{ "--no-cache-dir" if not pip_cache }} {{ "-i " + index_url if index_url }} {{ wheel_file }}{{ extra_requires if extra_requires }}
 
 FROM {{ base_image }}
 
