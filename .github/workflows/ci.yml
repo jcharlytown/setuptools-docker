@@ -17,4 +17,5 @@ jobs:
           pytest tests
       - name: Build wheel
         run: |
+          pip install wheel
           python -m setup bdist_wheel
