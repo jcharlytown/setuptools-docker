@@ -305,7 +305,7 @@ def test_private_registry(test_context_dir, test_wheel_path, docker_client, pypi
         index_url=f"http://{hostname}:8080/simple",
         index_username="julian",
         index_password="7v#>HNzt/)H>xzDzoAjBrxtL:w9{GX",
-        pip_extra_args="--trusted-host j-thinkpad-l390",
+        pip_extra_args=f"--trusted-host {hostname}",
     )
     docker_hl_client = docker.from_env()
 

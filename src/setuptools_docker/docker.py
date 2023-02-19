@@ -3,6 +3,7 @@ import pathlib
 import random
 import shutil
 import subprocess
+import urllib.parse
 from string import ascii_letters
 from typing import Dict, List, Optional, Tuple
 
@@ -91,7 +92,11 @@ def prepare_context(
     with open(os.path.join(context_path, "Dockerfile"), "w") as dockerfile_f:
         dockerfile_f.write(dockerfile)
 
-    return {INDEX_SECRET_NAME: index_password} if index_password else {}
+    return (
+        {INDEX_SECRET_NAME: urllib.parse.quote(index_password, safe="")}
+        if index_password
+        else {}
+    )
 
 
 def build_image(
