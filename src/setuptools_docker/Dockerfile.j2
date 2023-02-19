@@ -23,7 +23,7 @@ RUN {{ "--mount=type=secret,id=INDEX_PASSWORD" if index_url_needs_secret }} {{ "
 COPY {{ wheel_file }} .
 
 RUN {{ "--mount=type=secret,id=INDEX_PASSWORD" if index_url_needs_secret }} {{ "--mount=type=cache,target=/root/.cache/pip" if pip_cache }} pip install \
-    {{ "--no-cache-dir" if not pip_cache }} {{ "-i " + index_url if index_url }} {{ wheel_file }}{{ extra_requires if extra_requires }}
+    {{ pip_extra_args if pip_extra_args }} {{ "--no-cache-dir" if not pip_cache }} {{ "-i " + index_url if index_url }} {{ wheel_file }}{{ extra_requires if extra_requires }}
 
 FROM {{ base_image }}
 

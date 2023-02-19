@@ -29,6 +29,7 @@ def prepare_context(
     user_id: Optional[int] = None,
     pip_cache: bool = True,
     env_vars: List[Tuple[str, str]] = [],
+    pip_extra_args: Optional[str] = None,
 ) -> Dict[str, str]:
     pathlib.Path(context_path).mkdir(parents=True, exist_ok=True)
 
@@ -77,6 +78,7 @@ def prepare_context(
         requirements_file=requirements_file_basename,
         index_url=index_url_with_auth,
         index_url_needs_secret=index_password is not None,
+        pip_extra_args=pip_extra_args,
         init_scripts_base=init_scripts_base,
         entrypoint_exec_form=entrypoint_exec_form,
         command_exec_form=command_exec_form,

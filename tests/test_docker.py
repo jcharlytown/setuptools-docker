@@ -4,8 +4,12 @@ import os
 import shutil
 import urllib.request
 import docker
+import requests
+import time
+import socket
 
 from setuptools_docker.docker import _render_index_url, prepare_context, build_image
+from requests.exceptions import ConnectionError
 
 
 @pytest.fixture(scope="session")
@@ -39,6 +43,51 @@ def test_wheel_path(tmp_dir):
     return filename
 
 
+@pytest.fixture()
+def pypi_proxy():
+    dc = docker.from_env()
+    this_dir = os.path.dirname(os.path.abspath(__file__))
+    nginx_cfg = str(os.path.join(this_dir, "nginx_proxy", "default.conf"))
+    passwd_file = str(os.path.join(this_dir, "nginx_proxy", ".htpasswd"))
+
+    container = None
+    try:
+        container = dc.containers.run(
+            "nginx",
+            detach=True,
+            volumes={
+                nginx_cfg: {
+                    "bind": "/etc/nginx/conf.d/default.conf",
+                    "mode": "ro",
+                },
+                passwd_file: {
+                    "bind": "/etc/apache2/.htpasswd",
+                    "mode": "ro",
+                },
+            },
+            ports={"80/tcp": 8080},
+            remove=True,
+        )
+
+        # takes a short while for nginx to become ready -> wait until health endpoint is up
+        for i in range(1, 5):
+            if i == 5:
+                raise Exception("Container failed to start")
+            try:
+                res = requests.get("http://localhost:8080/health")
+                if res.status_code == 200:
+                    break
+            except ConnectionError:
+                pass
+
+            time.sleep(1)
+
+        yield container
+    finally:
+        if container:
+            container.stop()
+
+
 @pytest.mark.parametrize(
     "url, user, pw, expected_url",
     [
@@ -57,12 +106,13 @@ def test_render_index_url(url, user, pw, expected_url):
 
 
 def build_and_inspect_test_image(docker_client, target=None, **kwargs):
-    prepare_context(**kwargs)
+    secrets = prepare_context(**kwargs)
     build_image(
         context_path=kwargs.get("context_path"),
         image_name="setuptools-docker-unittest",
         image_tag="latest",
         target=target,
+        secrets=secrets,
     )
 
     return docker_client.inspect_image("setuptools-docker-unittest:latest")
@@ -239,4 +289,31 @@ def test_pip_packages(tmp_dir, test_context_dir, test_wheel_path, docker_client)
 
     assert "gunicorn" in output
     assert "Werkzeug" in output
+    assert "gevent" in output
+
+
+def test_private_registry(test_context_dir, test_wheel_path, docker_client, pypi_proxy):
+    res = requests.get("http://localhost:8080/simple/gevent")
+    assert res.status_code == 401
+
+    hostname = socket.gethostname()
+    build_and_inspect_test_image(
+        docker_client,
+        context_path=test_context_dir,
+        wheel_file=test_wheel_path,
+        extra_requires=["gevent"],
+        index_url=f"http://{hostname}:8080/simple",
+        index_username="julian",
+        index_password="7v#>HNzt/)H>xzDzoAjBrxtL:w9{GX",
+        pip_extra_args="--trusted-host j-thinkpad-l390",
+    )
+    docker_hl_client = docker.from_env()
+
+    output = str(
+        docker_hl_client.containers.run(
+            "setuptools-docker-unittest:latest", entrypoint="pip list"
+        )
+    )
+
+    assert "gunicorn" in output
     assert "gevent" in output
