@@ -17,7 +17,7 @@ WORKDIR /app
 COPY {{ requirements_file }} .
 
 RUN {{ "--mount=type=secret,id=INDEX_PASSWORD" if index_url_needs_secret }} {{ "--mount=type=cache,target=/root/.cache/pip" if pip_cache }} pip install {{ "--no-cache-dir" if not pip_cache }} {{ "-i " + index_url if index_url }} \
-    -r {{ requirements_file }}
+    {{ pip_extra_args if pip_extra_args }} -r {{ requirements_file }}
 {% endif %}
 
 COPY {{ wheel_file }} .
