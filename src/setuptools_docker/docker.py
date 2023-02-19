@@ -105,6 +105,7 @@ def build_image(
     image_tag: str,
     secrets: Dict[str, str] = {},
     target: Optional[str] = None,
+    extra_docker_args: List[str] = [],
 ):
     subprocess_env = secrets.copy()
     subprocess_env["PATH"] = os.environ["PATH"]
@@ -118,6 +119,7 @@ def build_image(
         ]
         + (["--target", target] if target else [])
         + _secrets_args(secrets)
+        + extra_docker_args
         + [
             "-f",
             str(os.path.join(context_path, "Dockerfile")),

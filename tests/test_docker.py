@@ -113,6 +113,7 @@ def build_and_inspect_test_image(docker_client, target=None, **kwargs):
         image_tag="latest",
         target=target,
         secrets=secrets,
+        extra_docker_args=["--network", "host"],
     )
 
     return docker_client.inspect_image("setuptools-docker-unittest:latest")
@@ -296,16 +297,15 @@ def test_private_registry(test_context_dir, test_wheel_path, docker_client, pypi
     res = requests.get("http://localhost:8080/simple/gevent")
     assert res.status_code == 401
 
-    hostname = socket.gethostname()
     build_and_inspect_test_image(
         docker_client,
         context_path=test_context_dir,
         wheel_file=test_wheel_path,
         extra_requires=["gevent"],
-        index_url=f"http://{hostname}:8080/simple",
+        index_url=f"http://localhost:8080/simple",
         index_username="julian",
         index_password="7v#>HNzt/)H>xzDzoAjBrxtL:w9{GX",
-        pip_extra_args=f"--trusted-host {hostname}",
+        pip_extra_args="--trusted-host localhost",
     )
     docker_hl_client = docker.from_env()
 
