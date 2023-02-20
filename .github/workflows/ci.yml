@@ -15,7 +15,9 @@ jobs:
       - name: Tests
         run: |
           pytest tests
-      - name: Build wheel
+      - name: Install pypa/build
         run: |
-          pip install wheel
-          python -m setup bdist_wheel
+          python -m pip install build --user
+      - name: Build a binary wheel and a source tarball
+        run: |
+          python -m build --sdist --wheel --outdir dist/ .
