@@ -21,3 +21,15 @@ jobs:
       - name: Build a binary wheel and a source tarball
         run: |
           python -m build --sdist --wheel --outdir dist/ .
+      - name: Make release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          tag_name: v0.1.0-rc0
+          files: |
+            dist/*
+      - name: Publish to test pypi
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.TESTING_PYPI_TOKEN }}
+          repository_url: https://test.pypi.org/legacy/
