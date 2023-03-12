@@ -26,7 +26,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           draft: true
-          tag_name: v0.1.0-rc0
           files: |
             dist/*
       - name: Publish to test pypi
