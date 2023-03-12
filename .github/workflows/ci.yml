@@ -25,7 +25,6 @@ jobs:
         if: startsWith(github.ref, 'refs/tags')
         uses: softprops/action-gh-release@v1
         with:
-          draft: true
           files: |
             dist/*
       - name: Publish to test pypi
