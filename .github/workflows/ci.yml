@@ -1,5 +1,8 @@
 name: Check
-on: [push]
+on:
+  push:
+    tags:
+      - 'v*.*.*'
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -15,7 +18,18 @@ jobs:
       - name: Tests
         run: |
           pytest tests
-      - name: Build wheel
+      - name: Build binary wheel and source tarball
         run: |
-          pip install wheel
-          python -m setup bdist_wheel
+          python setup.py sdist bdist_wheel
+      - name: Make release
+        if: startsWith(github.ref, 'refs/tags')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/*
+      - name: Publish to test pypi
+        if: startsWith(github.ref, 'refs/tags')
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.TESTING_PYPI_TOKEN }}
+          repository_url: https://test.pypi.org/legacy/
